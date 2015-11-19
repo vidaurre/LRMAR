@@ -1,16 +1,17 @@
-function [model,Z,fehist]=lrmartrain(X,options)
+function [model,Z,fehist]=lrmartrain(X,T,options)
 %
 % Train LRMAR model using using the Variational Framework
 %
 % INPUTS:
 %
-% X - T x ndim data matrix
+% X - time points x ndim data matrix
+% T - number of time points per trial
 % options.Q - Number of latent components
 % options.P - Order the MAR model
 % options.L - Output order (no. of outputs lags to consider)
 % options.cyc - maximum number of cycles of VB inference (default 100)
 % options.tol - termination tol (change in log-evidence) (default 0.0001)
-% options.showfe - show free energy progress? 
+% options.verbose - show free energy progress?
 %
 % OUTPUTS
 % model - LRMAR model
@@ -22,37 +23,46 @@ function [model,Z,fehist]=lrmartrain(X,options)
 if ~isfield(options,'L'), options.L = 1; end
 if ~isfield(options,'cyc'), options.cyc = 1000; end
 if ~isfield(options,'tol'), options.tol = .001; end
-if ~isfield(options,'showfe'), options.showfe = 1; end
+if ~isfield(options,'verbose'), options.verbose = 1; end
 
-%%%% Init model
-[model,Z] = lrmarinit(X,options);
-
-fehist=[];
-fe=0;
-for cycle=1:model.train.cyc
-    
-    %%%% Compute free energy
-    oldfe=fe;
-    fe=evalfreeenergy(X,model,Z);        
-    fehist=[fehist; fe];
-    mesgstr='';
-    if cycle>2
-        if (fe-oldfe) > 0,
-            mesgstr='(Violation)';
-        end;
-        if abs((fe - oldfe)/oldfe*100) < model.train.tol
-            break;
-        end;
-    end;
-    if options.showfe
-        fprintf('cycle %i free energy = %f %s \n',cycle,fe,mesgstr);
-    end
-    
-    %%%% VB E-step update
-    Z = lrmarevb(X,model);
-    
-    %%%% VB M-step update
-    model=lrmarmvb(X,model,Z);
+if any(abs(mean(X)>1e-10))
+   warning('Data is being centered, consider standardizing as well')
+   X = X - repmat(mean(X),size(X,1),1);
 end
 
-return;
+% Auxiliar variables
+[XX,Y,GramX] = formautoregr(X,T,options.P,options.L);
+
+% Init model
+[model,Z] = lrmarinit(XX,Y,options);
+
+for cycle=1:model.train.cyc
+        
+    % VB E-step update
+    Z = lrmarevb(XX,Y,model);
+   
+    % VB M-step update
+    model=lrmarmvb(XX,Y,model,Z,GramX,1); %cycle==1);
+    
+    % Compute free energy
+    fe=evalfreeenergy(XX,Y,model,Z);
+    if cycle>=2
+        ch = (fe - oldfe)/abs(oldfe);
+        fehist=[fehist; fe];
+        if abs(ch) < model.train.tol
+            break;
+        end
+        if options.verbose
+            fprintf('cycle %i free energy = %g (relative change %g) \n',cycle,fe,ch);
+        end
+    else
+        fehist = fe;
+        if options.verbose
+            fprintf('cycle %i free energy = %g \n',cycle,fe);
+        end
+    end
+    oldfe=fe;
+    
+end
+
+end

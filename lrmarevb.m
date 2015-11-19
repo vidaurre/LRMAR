@@ -1,35 +1,30 @@
-function Z = lrmarevb (X,model)
+function Z = lrmarevb (XX,Y,model)
 %
 % Variational Bayes E step 
 %
-% X - T x ndim data matrix
+% XX and Y - autoregressors matrix and response
 % model - LRMAR model
 %
 % Author: Diego Vidaurre, OHBA, University of Oxford
 
-[T,ndim]=size(X);
-if length(X)~=T,
-    X=X';
-    [T,ndim]=size(X);
-end;
+VPsi = model.V.Mu_V .* ...
+    repmat(model.Psi.Gam_shape ./ model.Psi.Gam_rate,size(model.V.Mu_V,1),1); 
 
-P = model.train.P;
-L = model.train.L;
-
-XX = zeros(T-P-L+1,P*ndim);
-for i=1:P
-    XX(:,(1:ndim) + (i-1)*ndim) = X(P-i+1:T-i-L+1,:);
-end;
-Y = zeros(T-P-L+1,ndim*L);
-for i=1:L
-    Y(:,(1:ndim) + (i-1)*ndim) = X(P+i:T+i-L,:);
-end;
-
-VPsi = model.V.Mu_V * diag(model.Psi.Gam_shape ./ model.Psi.Gam_rate); 
 Z = struct('Mu_Z',[],'S_Z',[]);
-Z.S_Z = inv(diag(model.Omega.Gam_shape ./ model.Omega.Gam_rate) + VPsi * model.V.Mu_V'); 
-Z.Mu_Z = (Z.S_Z * ( diag(model.Omega.Gam_shape ./ model.Omega.Gam_rate) * (XX * model.W.Mu_W)' + VPsi * Y' ))';
+Prec = model.Omega.Gam_shape ./ model.Omega.Gam_rate;
+Z.S_Z = inv(diag(Prec) + VPsi * model.V.Mu_V'); 
+Z.Mu_Z = ( repmat(Prec,size(XX,1),1) .* (XX * model.W.Mu_W) + Y * VPsi') * Z.S_Z;
 
+% pp = XX * model.W.Mu_W;
+% subplot(3,1,1);plot(Z.Mu_Z(end-1000:end));
+% subplot(3,1,2);plot([Prec*pp(end-1000:end)  Y(end-1000:end,:)*VPsi']); 
+% subplot(3,1,3);plot([pp(end-1000:end)  Y(end-1000:end,:)*model.V.Mu_V']); 
+% [mean( (pp-Z.Mu_Z).^2) mean(mean( (Y-Z.Mu_Z*model.V.Mu_V).^2)) ]
+% [sum(sum(model.W.Mu_W)) sum(sum(model.V.Mu_V))]
+% [ model.Omega.Gam_rate./model.Omega.Gam_shape mean(model.Psi.Gam_rate./model.Psi.Gam_shape) ]
+% 
+% pause(0.1);
+% 
 
 
 

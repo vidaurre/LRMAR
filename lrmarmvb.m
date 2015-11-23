@@ -50,11 +50,13 @@ end
 %%% Hidden - Output: V
 SZZ = T*Z.S_Z;
 EZZ = Z.Mu_Z' * Z.Mu_Z + SZZ;
-R = diag(model.gamma.Gam_shape ./ model.gamma.Gam_rate);
-for n=1:(ndim*L)
-    prec = model.Psi.Gam_shape / model.Psi.Gam_rate(n);
-    model.V.S_V(n,:,:) = inv( R + prec * EZZ);
-    model.V.Mu_V(:,n) = prec * permute(model.V.S_V(n,:,:),[2 3 1]) * Z.Mu_Z' * Y(:,n);
+if model.train.estimate_V
+    R = diag(model.gamma.Gam_shape ./ model.gamma.Gam_rate);
+    for n=1:(ndim*L)
+        prec = model.Psi.Gam_shape / model.Psi.Gam_rate(n);
+        model.V.S_V(n,:,:) = inv( R + prec * EZZ);
+        model.V.Mu_V(:,n) = prec * permute(model.V.S_V(n,:,:),[2 3 1]) * Z.Mu_Z' * Y(:,n);
+    end
 end
 
 %%% Hidden - Output: Psi

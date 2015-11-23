@@ -20,9 +20,11 @@ function [model,Z,fehist]=lrmartrain(X,T,options)
 %
 % Author: Diego Vidaurre, OHBA, University of Oxford
 
+if ~isfield(options,'Q'), options.Q = 1; end
 if ~isfield(options,'L'), options.L = 1; end
 if ~isfield(options,'cyc'), options.cyc = 1000; end
 if ~isfield(options,'tol'), options.tol = .001; end
+if ~isfield(options,'estimate_V'), options.estimate_V = (options.Q > 1); end
 if ~isfield(options,'verbose'), options.verbose = 1; end
 
 if any(abs(mean(X)>1e-10))

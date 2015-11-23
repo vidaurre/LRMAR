@@ -13,13 +13,7 @@ function [model,Z] = lrmarinit (XX,Y,options)
 %
 % Author: Diego Vidaurre, OHBA, University of Oxford
 
-model=struct('train',struct());
-model.train.Q = options.Q;
-model.train.P = options.P;
-model.train.L = options.L;
-model.train.cyc = options.cyc; 
-model.train.tol = options.tol; 
-
+model=struct('train',options);
 model=initpriors(Y,model);
 [model,Z]=initpost(XX,Y,model);
 

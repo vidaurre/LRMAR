@@ -51,12 +51,29 @@ L = model.train.L;
 ndim = ndim / L;
 
 % Z 
-[~, scores] = pca(Y, 'NumComponents', Q );
-scores = scores - repmat(mean(scores),T,1);
-scores = scores ./ repmat(std(scores),T,1);
-Z = struct('Mu_Z',[],'S_Z',[]);
-Z.S_Z = zeros(Q,Q);
-Z.Mu_Z  = scores;
+if strcmp(model.train.inittype,'pca')
+    [~, A] = pca(Y, 'NumComponents', Q );
+    A = A - repmat(mean(A),T,1);
+    A = A ./ repmat(std(A),T,1);
+    Z = struct('Mu_Z',[],'S_Z',[]);
+    Z.S_Z = zeros(Q,Q);
+    Z.Mu_Z  = A;
+elseif strcmp(model.train.inittype,'mar')
+    if L>1, error('L has to be 1 for inittype=mar'); end
+    S = (XX' * XX) \ (XX' * Y); % (order x ndim) by (ndim)
+    W = zeros(ndim*length(P),Q);
+    for i=1:length(P)
+        ind = (1:ndim) + (i-1)*ndim; 
+        W(ind) = pca(S(ind,:), 'NumComponents', Q );        
+    end
+    Z.Mu_Z  = XX * W;
+elseif strcmp(model.train.inittype,'mar')
+    Z.Mu_Z  = randn(size(XX,1),Q);
+else
+    error('Incorrect Initialisation')
+end
+Z.Mu_Z = Z.Mu_Z - repmat(mean(Z.Mu_Z),size(Z.Mu_Z,1),1);
+Z.Mu_Z = Z.Mu_Z ./ repmat(std(Z.Mu_Z),size(Z.Mu_Z,1),1);
 
 % W
 model.W = struct('Mu_W',[],'S_W',[]);
@@ -67,7 +84,7 @@ model.W.Mu_W = permute(model.W.S_W(1,:,:),[2 3 1]) * XX' * Z.Mu_Z;
 
 % V
 model.V = struct('Mu_V',[],'S_V',[]);
-model.V.S_V(1,:,:) = inv(Z.Mu_Z' * Z.Mu_Z + 0.1 * eye(size(Z.Mu_Z,2)) );
+model.V.S_V(1,:,:) = inv(Z.Mu_Z' * Z.Mu_Z + 0.0001 * eye(size(Z.Mu_Z,2)) );
 for n=2:(ndim*L),
     model.V.S_V(n,:,:) = model.V.S_V(1,:,:);
 end;

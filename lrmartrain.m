@@ -9,6 +9,7 @@ function [model,Z,fehist]=lrmartrain(X,T,options)
 % options.Q - Number of latent components
 % options.P - Order the MAR model
 % options.L - Output order (no. of outputs lags to consider)
+% options.inittype - Initialization of Z, 'pca' (default) or 'mar' 
 % options.cyc - maximum number of cycles of VB inference (default 100)
 % options.tol - termination tol (change in log-evidence) (default 0.0001)
 % options.verbose - show free energy progress?
@@ -24,6 +25,7 @@ if ~isfield(options,'Q'), options.Q = 1; end
 if ~isfield(options,'L'), options.L = 1; end
 if ~isfield(options,'cyc'), options.cyc = 1000; end
 if ~isfield(options,'tol'), options.tol = .001; end
+if ~isfield(options,'inittype'), options.inittype = 'pca'; end
 if ~isfield(options,'estimate_V'), options.estimate_V = (options.Q > 1); end
 if ~isfield(options,'verbose'), options.verbose = 1; end
 
@@ -37,6 +39,7 @@ end
 
 % Init model
 [model,Z] = lrmarinit(XX,Y,options);
+fehist = [];
 
 for cycle=1:model.train.cyc
         
@@ -50,7 +53,6 @@ for cycle=1:model.train.cyc
     fe=evalfreeenergy(XX,Y,model,Z);
     if cycle>=2
         ch = (fe - oldfe)/abs(oldfe);
-        fehist=[fehist; fe];
         if abs(ch) < model.train.tol
             break;
         end
@@ -63,6 +65,7 @@ for cycle=1:model.train.cyc
             fprintf('cycle %i free energy = %g \n',cycle,fe);
         end
     end
+    fehist=[fehist; fe];
     oldfe=fe;
     
 end

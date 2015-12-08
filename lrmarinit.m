@@ -10,6 +10,7 @@ function [model,Z] = lrmarinit (XX,Y,options)
 % options.L - Output P (no. of outputs lags to consider)
 % options.cyc - maximum number of cycles of VB inference (default 100)
 % options.tol - termination tol (change in log-evidence) (default 0.0001)
+% options.inittype - 'pca', 'mar' or 'random'
 %
 % Author: Diego Vidaurre, OHBA, University of Oxford
 
@@ -31,11 +32,15 @@ model.prior.sigma = struct('Gam_shape',[],'Gam_rate',[]);
 model.prior.sigma.Gam_shape = 0.001;
 model.prior.sigma.Gam_rate = 0.001*ones(length(P),ndim);
 model.prior.Omega = struct('Gam_shape',[],'Gam_rate',[]);
-model.prior.Omega.Gam_shape = Q + 0.1 - 1;
-model.prior.Omega.Gam_rate = (Q + 0.1 - 1)*ones(1,Q);
+% model.prior.Omega.Gam_shape = Q + 0.1 - 1;
+% model.prior.Omega.Gam_rate = (Q + 0.1 - 1)*ones(1,Q);
+model.prior.Omega.Gam_shape = 0.1;
+model.prior.Omega.Gam_rate = 0.1*ones(1,Q);
 model.prior.Psi = struct('Gam_shape',[],'Gam_rate',[]);
-model.prior.Psi.Gam_shape = L + ndim + 0.1 - 2;
-model.prior.Psi.Gam_rate = (L + ndim + 0.1 - 2)*ones(1,ndim*L);
+% model.prior.Psi.Gam_shape = L + ndim + 0.1 - 2;
+% model.prior.Psi.Gam_rate = (L + ndim + 0.1 - 2)*ones(1,ndim*L);
+model.prior.Psi.Gam_shape = 0.1;
+model.prior.Psi.Gam_rate = 0.1*ones(1,ndim*L);
 model.prior.gamma = struct('Gam_shape',[],'Gam_rate',[]);
 model.prior.gamma.Gam_shape = 0.001;
 model.prior.gamma.Gam_rate = 0.001*ones(1,Q);
@@ -60,14 +65,14 @@ if strcmp(model.train.inittype,'pca')
     Z.Mu_Z  = A;
 elseif strcmp(model.train.inittype,'mar')
     if L>1, error('L has to be 1 for inittype=mar'); end
-    S = (XX' * XX) \ (XX' * Y); % (order x ndim) by (ndim)
+    S = (XX' * XX + 0.0001 * eye(size(XX,2))) \ (XX' * Y); % (order x ndim) by (ndim)
     W = zeros(ndim*length(P),Q);
     for i=1:length(P)
         ind = (1:ndim) + (i-1)*ndim; 
         W(ind) = pca(S(ind,:), 'NumComponents', Q );        
     end
     Z.Mu_Z  = XX * W;
-elseif strcmp(model.train.inittype,'mar')
+elseif strcmp(model.train.inittype,'random')
     Z.Mu_Z  = randn(size(XX,1),Q);
 else
     error('Incorrect Initialisation')

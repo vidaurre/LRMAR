@@ -58,8 +58,8 @@ ndim = ndim / L;
 % Z 
 if strcmp(model.train.inittype,'pca')
     [~, A] = pca(Y, 'NumComponents', Q );
-    A = A - repmat(mean(A),T,1);
-    A = A ./ repmat(std(A),T,1);
+    %A = A - repmat(mean(A),T,1);
+    %A = A ./ repmat(std(A),T,1);
     Z = struct('Mu_Z',[],'S_Z',[]);
     Z.S_Z = zeros(Q,Q);
     Z.Mu_Z  = A;

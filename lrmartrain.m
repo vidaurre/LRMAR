@@ -29,7 +29,7 @@ if ~isfield(options,'inittype'), options.inittype = 'pca'; end
 if ~isfield(options,'estimate_V'), options.estimate_V = (options.Q > 1); end
 if ~isfield(options,'verbose'), options.verbose = 1; end
 
-if any(abs(mean(X)>1e-10))
+if any(abs(mean(X))>1e-10)
    warning('Data is being centered, consider standardizing as well')
    X = X - repmat(mean(X),size(X,1),1);
 end
@@ -47,7 +47,7 @@ for cycle=1:model.train.cyc
     Z = lrmarevb(XX,Y,model);
    
     % VB M-step update
-    model=lrmarmvb(XX,Y,model,Z,GramX,1); %cycle==1);
+    model = lrmarmvb(XX,Y,model,Z,GramX,1); %cycle==1);
     
     % Compute free energy
     fe=evalfreeenergy(XX,Y,model,Z);

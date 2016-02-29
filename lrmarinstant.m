@@ -2,7 +2,7 @@ function Z = lrmarinstant (X,T,model,standardize)
 
 if nargin<4, standardize = 1; end
 
-if any(abs(mean(X)>1e-10))
+if any(abs(mean(X))>1e-5)
    warning('Data is being centered, consider standardizing as well')
    X = X - repmat(mean(X),size(X,1),1);
 end
